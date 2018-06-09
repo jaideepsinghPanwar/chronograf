@@ -15,6 +15,7 @@ import {UpdateScript} from 'src/flux/actions'
 
 import {bodyNodes} from 'src/flux/helpers'
 import {getSuggestions, getAST, getTimeSeries} from 'src/flux/apis'
+import {getDeep} from 'src/utils/wrappers'
 import {builder, argTypes} from 'src/flux/constants'
 
 import {Source, Service, Notification, FluxTable} from 'src/types'
@@ -148,6 +149,7 @@ export class FluxPage extends PureComponent<Props, State> {
       onToggleYield: this.handleToggleYield,
       service: this.service,
       data: this.state.data,
+      scriptUpToYield: this.scriptUpToYield,
     }
   }
 
@@ -227,7 +229,11 @@ export class FluxPage extends PureComponent<Props, State> {
   }
 
   private get bodyToScript(): string {
-    return this.state.body.reduce((acc, b) => {
+    return this.getBodyToScript(this.state.body)
+  }
+
+  private getBodyToScript(body: Body[]): string {
+    return body.reduce((acc, b) => {
       if (b.declarations.length) {
         const declaration = _.get(b, 'declarations.0', false)
         if (!declaration) {
@@ -327,6 +333,106 @@ export class FluxPage extends PureComponent<Props, State> {
 
     this.getASTResponse(script)
   }
+
+  private scriptUpToYield = (
+    bodyID: string,
+    declarationID: string,
+    funcNodeIndex: number
+  ) => {
+    const {body: bodies} = this.state
+
+    const bodyIndex = bodies.findIndex(b => b.id === bodyID)
+
+    const bodiesBeforeYield = bodies
+      .slice(0, bodyIndex)
+      .map(b => this.removeYieldFuncFromBody(b))
+
+    const body = this.prepBodyForYield(
+      bodies[bodyIndex],
+      declarationID,
+      funcNodeIndex
+    )
+
+    const bodiesForScript = [...bodiesBeforeYield, body]
+
+    return this.getBodyToScript(bodiesForScript)
+  }
+
+  private prepBodyForYield(
+    body: Body,
+    declarationID: string,
+    yieldNodeIndex: number
+  ) {
+    // find the func(k)
+    const funcs = this.getFuncs(body, declarationID)
+    // slice the funcs
+    const funcsUpToYield = funcs.slice(0, yieldNodeIndex)
+    const yieldNode = funcs[yieldNodeIndex]
+    // filter out yields
+    const funcsWithoutYields = funcsUpToYield.filter(f => f.name !== 'yield')
+    const funcsForBody = [...funcsWithoutYields, yieldNode]
+    // put funk back into body
+
+    if (declarationID) {
+      const declaration = body.declarations.find(d => d.id === declarationID)
+      const declarations = [{...declaration, funcs: funcsForBody}]
+      return {...body, declarations}
+    }
+
+    return {...body, funcs: funcsForBody}
+  }
+
+  private getFuncs(body: Body, declarationID: string): Func[] {
+    const declaration = body.declarations.find(d => d.id === declarationID)
+
+    if (declaration) {
+      return _.get(declaration, 'funcs', [])
+    }
+    return _.get(body, 'funcs', [])
+  }
+
+  private removeYieldFuncFromBody(body: Body): Body {
+    const declarationID = _.get(body, 'declarations.0.id')
+    const funcs = this.getFuncs(body, declarationID)
+    const funcsWithoutYields = funcs.filter(f => f.name !== 'yield')
+
+    if (declarationID) {
+      const declaration = _.get(body, 'declarations.0')
+      const declarations = [{...declaration, funcs: funcsWithoutYields}]
+      return {...body, declarations}
+    }
+
+    return {...body, funcs: funcsWithoutYields}
+  }
+
+  // private scriptUpToYield = (
+  //   bodyID: string,
+  //   declarationID: string,
+  //   funcNodeIndex: number
+  // ): string => {
+  //   const bodyIndex = this.state.body.findIndex(b => b.id === bodyID)
+  //   const bodiesUpToYield = this.state.body.slice(0, bodyIndex + 1)
+
+  //   bodiesUpToYield[bodyIndex] = bodiesUpToYield[bodyIndex]
+
+  //   // const filteredNodes = _.flatMap(bodyFuncs, funcs =>
+  //   //   _.getfuncs.filter(f => f.name !== 'yield')
+  //   // )
+
+  //   return this.getBodyToScript(body)
+  // }
+
+  // private filterYieldFuncs(body: Body): Func[] {
+  //   if (!_.isEmpty(body.declarations)) {
+  //     _.reduce(body.declarations, (acc, d) => {
+  //       const funcs = _.get(d, 'funcs', [])
+  //       const funcsWithoutYields = funcs.filter(f => f.name !== 'yield')
+  //     })
+  //     // const declarations = _.flatMap(body.declarations, d => _.get(d, 'funcs', []))
+  //   }
+
+  //   return _.get(body, 'funcs', [])
+  // }
 
   private handleToggleYield = (
     bodyID: string,
