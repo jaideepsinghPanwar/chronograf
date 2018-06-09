@@ -18,7 +18,7 @@ import {
   Tags,
   TagValues,
 } from './query'
-import {AlertRule, Kapacitor, Task} from './kapacitor'
+import {AlertRule, Kapacitor, Task, RuleValues} from './kapacitor'
 import {Source, SourceLinks} from './sources'
 import {DropdownAction, DropdownItem} from './shared'
 import {
@@ -27,6 +27,7 @@ import {
   NotificationAction,
 } from './notifications'
 import {FluxTable, ScriptStatus, SchemaFilter, RemoteDataState} from './flux'
+import {DygraphSeries, DygraphValue, DygraphAxis} from './dygraphs'
 
 export {
   Me,
@@ -59,6 +60,10 @@ export {
   DropdownItem,
   TimeRange,
   Task,
+  RuleValues,
+  DygraphSeries,
+  DygraphValue,
+  DygraphAxis,
   Notification,
   NotificationFunc,
   NotificationAction,

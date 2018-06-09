@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js'
+import {RuleValues} from 'src/types'
 
 const ADD_FACTOR = 1.1
 const SUB_FACTOR = 0.9
@@ -16,9 +17,9 @@ const considerEmpty = (userNumber, number) => {
 const getRange = (
   timeSeries,
   userSelectedRange = [null, null],
-  ruleValues = {value: null, rangeValue: null, operator: ''}
-) => {
-  const {value, rangeValue, operator} = ruleValues
+  rangeValues?: RuleValues
+): [number, number] => {
+  const {value = null, rangeValue = null, operator = ''} = rangeValues
   const [uMin, uMax] = userSelectedRange
   const userMin = checkNumeric(uMin)
   const userMax = checkNumeric(uMax)
@@ -89,7 +90,7 @@ const getRange = (
 }
 
 const coerceToNum = str => (str ? +str : null)
-export const getStackedRange = (bounds = [null, null]) => [
+export const getStackedRange = (bounds = [null, null]): [number, number] => [
   coerceToNum(bounds[0]),
   coerceToNum(bounds[1]),
 ]

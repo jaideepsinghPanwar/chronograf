@@ -2,6 +2,23 @@ export type DataArray = number[][]
 
 export type Data = string | DataArray | google.visualization.DataTable
 
+export type DygraphValue = string | number | Date | null
+
+export interface DygraphAxis {
+  bounds: [number, number]
+  label: string
+  prefix: string
+  suffix: string
+  base: string
+  scale: string
+}
+
+export interface DygraphSeries {
+  [x: string]: {
+    axis: string
+  }
+}
+
 export interface PerSeriesOptions {
   /**
    * Set to either 'y1' or 'y2' to assign a series to a y-axis (primary or secondary). Must be
